@@ -1,0 +1,346 @@
+---
+title: "Descritivas"
+author: "Joao Casella, Paloma Ary, Sofia Barbuzza, Valentina Guida, Victoria Saraiva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+fig_width: 2
+fig_height: 2
+fontsize: 8pt
+---
+
+```{r, echo=TRUE}
+
+# Importando bibliotecas
+
+library(tidyr)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+```
+
+
+```{r,echo=TRUE}
+
+# baixar a base dos Tigres
+
+caminho <- "C:/Users/jcase/OneDrive/Joao/Insper/6 semestre/Problemas em Economia/Econometria/Descritivas/Tratados.xlsx"
+
+tratados <- read_excel(caminho, sheet = "Dados")
+
+
+```
+
+
+
+```{r,echo=TRUE}
+
+# Puxar a base com essas medidas para os paises que temos dados controle
+
+
+caminho <- "C:/Users/jcase/OneDrive/Joao/Insper/6 semestre/Problemas em Economia/Econometria/Descritivas/Controles.xlsx"
+
+controles <- read_excel(caminho, sheet = "Dados")
+
+
+```
+
+```{r,echo=TRUE}
+
+
+# Descritivas dos paises controles
+
+paises_unicos <- unique(controles$exporter_iso3)
+
+
+for (pais in paises_unicos) {
+
+  dados_pais <- filter(controles, exporter_iso3 == pais)
+  
+
+  variaveis_numericas <- dados_pais %>% select(GDP, dot_L, unemployment)
+  
+
+  resultados2 <- data.frame(Variavel = character(0), Min = numeric(0), Q1 = numeric(0), Mediana = numeric(0), Q3 = numeric(0), Max = numeric(0), Outliers = numeric(0))
+  
+
+  for (coluna in colnames(variaveis_numericas)) {
+    quantis <- quantile(variaveis_numericas[[coluna]], c(0, 0.25, 0.5, 0.75, 1))
+    min_valor <- min(variaveis_numericas[[coluna]])
+    max_valor <- max(variaveis_numericas[[coluna]])
+    iqr <- quantis[4] - quantis[2]
+    limite_inferior <- quantis[2] - 1.5 * iqr
+    limite_superior <- quantis[4] + 1.5 * iqr
+    outliers <- length(variaveis_numericas[[coluna]][variaveis_numericas[[coluna]]>=limite_superior|variaveis_numericas[[coluna]]<=limite_inferior])
+    
+    resultados2 <- rbind(resultados2, data.frame(Variavel = coluna, Min = min_valor, Q1 = quantis[2], Mediana = quantis[3], Q3 = quantis[4], Max=max_valor, Limite_Inferior = limite_inferior, Limite_Superior = limite_superior, Outliers=outliers))
+    
+
+    boxplot(variaveis_numericas[[coluna]], outline = TRUE, main = paste(coluna, "-", pais))
+    text(1, max(variaveis_numericas[[coluna]]), labels = outliers, pos = 4)
+  }
+}
+
+rownames(resultados2) <- NULL
+
+```
+
+
+```{r, echo=TRUE}
+
+
+paises_unicos <- unique(controles$exporter_iso3)
+
+resultados_df <- data.frame(Pais = character(0), Status = character(0))
+
+for (pais in paises_unicos) {
+  dados_pais <- filter(controles, exporter_iso3 == pais)
+  variaveis_numericas <- dados_pais %>% select(GDP, dot_L, unemployment)
+
+  dentro_fora <- "DENTRO"  
+
+  for (coluna in colnames(variaveis_numericas)) {
+    quantis <- quantile(variaveis_numericas[[coluna]], c(0, 0.25, 0.5, 0.75, 1))
+    min_valor <- min(variaveis_numericas[[coluna]])
+    max_valor <- max(variaveis_numericas[[coluna]])
+    iqr <- quantis[4] - quantis[2]
+    limite_inferior <- quantis[2] - 1.5 * iqr
+    limite_superior <- quantis[4] + 1.5 * iqr
+
+    if ("dot_L" %in% coluna) {
+      if (max(variaveis_numericas[[coluna]]) > limite_superior || min(variaveis_numericas[[coluna]]) < limite_inferior) {
+        dentro_fora <- "FORA"
+        break
+      }
+    }
+
+    if ("unemployment" %in% coluna) {
+      if (max(variaveis_numericas[[coluna]]) > limite_superior || min(variaveis_numericas[[coluna]]) < limite_inferior) {
+        dentro_fora <- "FORA"
+        break
+      }
+    }
+  }
+
+  resultados_df <- rbind(resultados_df, data.frame(exporter_iso3 = pais, status = dentro_fora))
+}
+
+print(resultados_df)
+
+
+```
+
+
+```{r,echo=TRUE}
+
+
+controles <- controles %>%
+  left_join(resultados_df, by = c("exporter_iso3" = "exporter_iso3")) %>%
+  group_by(exporter_iso3)
+
+
+#controles <- controles %>%
+ # filter(status == "DENTRO")
+
+print(controles)
+
+
+```
+```{r,echo=TRUE}
+
+paises_unicos <- unique(controles$exporter_iso3)
+
+paises_sobraram <- length(paises_unicos)
+
+print(paises_sobraram)
+
+print(paises_unicos)
+
+```
+
+```{r,echo=TRUE}
+
+caminho <- "C:/Users/jcase/OneDrive/Joao/Insper/6 semestre/Problemas em Economia/Econometria/Descritivas/comwchn.xlsx"
+
+comwchn <- read_excel(caminho, sheet = "Report")
+
+
+caminho <- "C:/Users/jcase/OneDrive/Joao/Insper/6 semestre/Problemas em Economia/Econometria/Descritivas/comcwor.xlsx"
+
+comcwor <- read_excel(caminho, sheet = "Report")
+
+
+caminho_exp <- "C:/Users/jcase/OneDrive/Joao/Insper/6 semestre/Problemas em Economia/Econometria/Descritivas/ExpUSITC.xlsx"
+
+caminho_imp <- "C:/Users/jcase/OneDrive/Joao/Insper/6 semestre/Problemas em Economia/Econometria/Descritivas/ImpUSITC.xlsx"
+
+Exp <- read_xlsx(caminho_exp, sheet = "Exp")
+Imp <- read_xlsx(caminho_imp, sheet = "Imp")
+
+
+
+Exp_melted <- Exp %>%
+  select(-`Data Type`)
+
+
+Exp <- Exp_melted %>%
+  gather(key = "year", value = "Exports", -Country, -NAIC, -Description)
+
+
+colnames(Exp) <- c("Country", "NAIC", "Description", "year", "Exports")
+
+
+
+Imp_melted <- Imp %>%
+  select(-`Data Type`)
+
+Imp <- Imp_melted %>%
+  gather(key = "year", value = "Imports", -Country, -NAIC, -Description)
+
+colnames(Imp) <- c("Country", "NAIC", "Description", "year", "Imports")
+
+
+mapeamento <- data.frame(
+  Nome = c("Australia", "Austria", "Belgium", "Canada", "Switzerland", "Chile", "Costa Rica", "Czech Republic", "Germany", "Denmark", "Spain", "Estonia", "Finland", "France", "United Kingdom", "Greece", "Hungary", "Ireland", "Iceland", "Israel", "Italy", "Japan", "Lithuania", "Luxembourg", "Latvia", "Mexico", "Netherlands", "Norway", "New Zealand", "Poland", "Portugal", "Slovakia", "Slovenia", "Sweden", "United States of America"),
+  Codigo = c("AUS", "AUT", "BEL", "CAN", "CHE", "CHL", "CRI", "CZE", "DEU", "DNK", "ESP", "EST", "FIN", "FRA", "GBR", "GRC", "HUN", "IRL", "ISL", "ISR", "ITA", "JPN", "LTU", "LUX", "LVA", "MEX", "NLD", "NOR", "NZL", "POL", "PRT", "SVK", "SVN", "SWE", "USA")
+)
+
+
+Imp <- Imp[Imp$Country %in% mapeamento$Nome, ]
+Exp <- Exp[Exp$Country %in% mapeamento$Nome, ]
+
+```
+
+
+```{r,echo=TRUE}
+
+
+#calculate_CID <- function(total_imports, imports_from_china) {
+#  if (imports_from_china == 0 || total_imports == 0) {
+#    return(0)
+#  } else {
+#    return((imports_from_china / total_imports) * 100)
+#  }
+#}
+
+
+calculate_RTOI <- function(exports_to_china, total_exports) {
+  if (exports_to_china == 0 || total_exports == 0) {
+    return(0)
+  } else {
+    return((exports_to_china / total_exports) * 100)
+  }
+}
+
+
+calculate_ATOI <- function(RTOI_exports, RTOI_imports) {
+  if (is.na(RTOI_exports) && is.na(RTOI_imports)) {
+    return(0)
+  } else if (is.na(RTOI_exports)) {
+    return(RTOI_imports)
+  } else if (is.na(RTOI_imports)) {
+    return(RTOI_exports)
+  } else {
+    return((RTOI_exports + RTOI_imports) / 2)
+  }
+}
+
+
+#calculate_TII <- function(exports_to_china, imports_from_china, total_exports, total_imports) {
+#  if (imports_from_china == 0 || total_imports == 0 || exports_to_china == 0 || total_exports == 0) #{
+#    return(0)
+#  } else {
+#    return((exports_to_china / imports_from_china) / (total_exports / total_imports))
+#  }
+#}
+
+
+anos_especificos <- c(1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019)  
+
+
+resultados_indices <- data.frame(Country = character(0))
+
+
+for (ano in anos_especificos) {
+
+  comwchn_ano <- filter(comwchn, year == ano)
+  comcwor_ano <- filter(comcwor, year == ano)
+  Exp_ano <- filter(Exp, year == ano)
+  Imp_ano <- filter(Imp, year == ano)
+  
+
+  paises <- unique(comwchn_ano$partner)
+  for (pais in paises) {
+    a1 <- sum(comwchn_ano$imports[comwchn_ano$partner == pais])
+    a2 <- sum(comcwor_ano$imports[comcwor_ano$reporting == pais])
+    a3 <- sum(Exp_ano$Exports[Exp_ano$Country == pais])
+    a4 <- sum(Imp_ano$Imports[Imp_ano$Country == pais])
+    
+
+    #CID <- calculate_CID(a4, a2)
+    RTOI <- calculate_RTOI(a1, a3)
+    ATOI <- calculate_ATOI(RTOI, RTOI)
+    #TII <- calculate_TII(a1, a2, a3, a4)
+    
+
+    resultados_indices <- bind_rows(resultados_indices, data.frame(Country = pais, 
+                          ATOI = ATOI, Year = ano))
+  }
+}
+
+
+print(resultados_indices)
+
+
+```
+
+
+```{r,echo=TRUE}
+
+indices <- c("ATOI")
+
+media_por_pais <- data.frame(Country = resultados_indices$Country)
+
+for (indice in indices) {
+
+  media_coluna <- paste("Media", indice, sep = "_")
+  
+  medias <- numeric(nrow(resultados_indices))
+  
+
+  for (i in 1:nrow(resultados_indices)) {
+    
+    cols <- grepl(indice, names(resultados_indices))
+    values <- resultados_indices[i, cols]
+    
+    medias[i] <- mean(values, na.rm = TRUE)
+  }
+  
+  media_por_pais[media_coluna] <- medias
+}
+
+
+mATOI <- media_por_pais[c("Country", "Media_ATOI")]
+
+mATOI <- aggregate(Media_ATOI ~ Country, data = mATOI, FUN = mean, na.rm = TRUE)
+
+
+# Removendo dado zerado
+mATOI <- mATOI[mATOI$Country != "Czech Republic", ]
+mATOI <- mATOI[mATOI$Country != "United States of America", ]
+print(mATOI)
+
+```
+
+
+```{r,echo=TRUE}
+
+# Criar um ranking
+
+mATOI$ranking <- rank(-mATOI$Media_ATOI)
+mATOI <- mATOI %>% arrange(ranking)
+print(mATOI)
+
+```
+

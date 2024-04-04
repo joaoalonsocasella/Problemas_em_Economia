@@ -1,0 +1,426 @@
+------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jcase\OneDrive\Joao\Insper\6 semestre\Problemas em Economia\Econometria\Entrega empírica\log
+> synth_TWN_tds_sd.log
+  log type:  text
+ opened on:   8 Nov 2023, 17:48:34
+
+. do "C:\Users\jcase\OneDrive\Joao\Insper\6 semestre\Problemas em Economia\Econometria\Entrega empírica\synth_TWN_
+> tds_sd.do"
+
+. clear
+
+. 
+. ssc install synth
+checking synth consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. 
+. import excel using "C:\Users\jcase\OneDrive\Joao\Insper\6 semestre\Problemas em Economia\Econometria\Estimacao\V
+> iscondao.xlsx", sheet("PEE1TWN") firstrow clear
+(19 vars, 782 obs)
+
+. 
+. tsset country_id year
+
+Panel variable: country_id (strongly balanced)
+ Time variable: year, 1997 to 2019
+         Delta: 1 unit
+
+. 
+. egen tratamento_2001 = total(year == 2001) if China_entrada_OMC == 1
+(136 missing values generated)
+
+. 
+. synth wage cresc_GDP n Price_to_c_index exports imports dot_K dot_L unemployment wage(2000) wage(1999) wage(1998
+> ) wage(1997), trunit(1) trperiod(2001) xperiod(1997(1)2000) fig
+------------------------------------------------------------------------------------------------------------------
+Synthetic Control Method for Comparative Case Studies
+------------------------------------------------------------------------------------------------------------------
+
+First Step: Data Setup
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+Data Setup successful
+------------------------------------------------------------------------------------------------------------------
+                Treated Unit: 1
+               Control Units:  2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+                              32 33 34
+------------------------------------------------------------------------------------------------------------------
+          Dependent Variable: wage
+  MSPE minimized for periods: 1997 1998 1999 2000
+Results obtained for periods: 1997 1998 1999 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013
+                              2014 2015 2016 2017 2018 2019
+------------------------------------------------------------------------------------------------------------------
+                  Predictors: cresc_GDP n Price_to_c_index exports imports dot_K dot_L unemployment wage(2000)
+                              wage(1999) wage(1998) wage(1997)
+------------------------------------------------------------------------------------------------------------------
+Unless period is specified
+predictors are averaged over: 1997 1998 1999 2000
+------------------------------------------------------------------------------------------------------------------
+
+Second Step: Run Optimization
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+Optimization done
+------------------------------------------------------------------------------------------------------------------
+
+Third Step: Obtain Results
+------------------------------------------------------------------------------------------------------------------
+Loss: Root Mean Squared Prediction Error
+
+---------------------
+   RMSPE |  758.2029 
+---------------------
+------------------------------------------------------------------------------------------------------------------
+Unit Weights:
+
+-----------------------
+    Co_No | Unit_Weight
+----------+------------
+        2 |           0
+        3 |           0
+        4 |           0
+        5 |           0
+        6 |           0
+        7 |           0
+        8 |           0
+        9 |           0
+       10 |           0
+       11 |           0
+       12 |           0
+       13 |           0
+       14 |           0
+       15 |           0
+       16 |           0
+       17 |           0
+       18 |           0
+       19 |           0
+       20 |           0
+       21 |           0
+       22 |           0
+       23 |           0
+       24 |           0
+       25 |           1
+       26 |           0
+       27 |           0
+       28 |           0
+       29 |           0
+       30 |           0
+       31 |           0
+       32 |           0
+       33 |           0
+       34 |           0
+-----------------------
+------------------------------------------------------------------------------------------------------------------
+Predictor Balance:
+
+------------------------------------------------------
+                               |   Treated  Synthetic 
+-------------------------------+----------------------
+                     cresc_GDP |  .0655843   .0744967 
+                             n |  2.19e+07    2400226 
+              Price_to_c_index |    1.0025   4.527668 
+                       exports |  3.56e+10   2.74e+09 
+                       imports |  3.39e+10   3.45e+09 
+                         dot_K |  1.95e+10   1.64e+09 
+                         dot_L |   9607500    1136295 
+                  unemployment |      2.83    14.3375 
+                    wage(2000) |  12327.33   13406.71 
+                    wage(1999) |  11855.83   12738.39 
+                    wage(1998) |  11776.13   12234.52 
+                    wage(1997) |  11493.67      11875 
+------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+
+. 
+. *TWN, todos os países, todas as variáveis
+. 
+end of do-file
+
+. do "C:\Users\jcase\OneDrive\Joao\Insper\6 semestre\Problemas em Economia\Econometria\Entrega empírica\placebo_TW
+> N_tds_sd3.do"
+
+. * 1. Loop through all units and store the results of synth via the keep option.
+. 
+. * load dataset
+. clear
+
+. ssc install synth
+checking synth consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. import excel using "C:\Users\jcase\OneDrive\Joao\Insper\6 semestre\Problemas em Economia\Econometria\Estimacao\V
+> iscondao.xlsx", sheet("PEE1TWN") firstrow clear
+(19 vars, 782 obs)
+
+. 
+. ** tsset
+. 
+. tsset country_id year
+
+Panel variable: country_id (strongly balanced)
+ Time variable: year, 1997 to 2019
+         Delta: 1 unit
+
+. egen tratamento_2001 = total(year == 2001) if China_entrada_OMC == 1
+(136 missing values generated)
+
+. 
+. ** loop through units
+. 
+. forvalues i = 1/34 {
+  2.     
+.     qui synth wage cresc_GDP n Price_to_c_index exports imports dot_K dot_L unemployment wage(2000) wage(1999) w
+> age(1998) wage(1997), trunit(`i') trperiod(2001) xperiod(1997(1)2000) keep(test`i',replace)
+  3. }
+
+. 
+. **********************************************************************
+. 
+. * 2. Now I loop through all saved datasets and create the relevant variables (years and treatment effect). Furth
+> ermore, I drop missing observations.
+. 
+. forval i=1/34{
+  2. 
+. use test`i', clear
+  3. 
+. rename _time years
+  4. 
+. gen tr_effect_`i' = _Y_treated - _Y_synthetic
+  5. 
+. keep years tr_effect_`i'
+  6. 
+. drop if missing(years)
+  7. 
+. save test`i', replace
+  8. }
+(10 missing values generated)
+(10 observations deleted)
+file test1.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test2.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test3.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test4.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test5.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test6.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test7.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test8.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test9.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test10.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test11.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test12.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test13.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test14.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test15.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test16.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test17.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test18.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test19.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test20.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test21.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test22.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test23.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test24.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test25.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test26.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test27.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test28.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test29.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test30.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test31.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test32.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test33.dta saved
+(10 missing values generated)
+(10 observations deleted)
+file test34.dta saved
+
+. 
+. **********************************************************************
+. 
+. 
+. * 3. Now I load the first dataset and merge all the remaining datasets.
+. 
+. use test1, clear
+
+. 
+. forval i=1/34{
+  2. 
+. qui merge 1:1 years using test`i', nogenerate
+  3. }
+
+. 
+. **********************************************************************
+. 
+. 
+. * 4. Now the dataset should consist of 40 variables. One named "years" and 34 variables *with the treatment effe
+> ct of the respective unit. To plot these variables in one graph, I *use a solution offered by Nicholas J. Cox (s
+> ee *http://www.stata.com/statalist/archi.../msg01370.html) to plot all the lines with one *color. Then I add HKG
+>  (unit = 1) with a different color to the plot.
+. 
+. local lp
+
+. 
+. forval i=1/34 {
+  2.    local lp `lp' line tr_effect_`i' years, lcolor(gs12) ||
+  3. }
+
+. *
+. 
+. * create plot
+. 
+. twoway `lp' || line tr_effect_1 years, ///
+> lcolor(orange) legend(off) xline(2001, lpattern(dash))
+
+. 
+. **********************************************************************
+. 
+. *5. Test statistics
+. 
+. clear
+
+. ssc install synth
+checking synth consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. import excel using "C:\Users\jcase\OneDrive\Joao\Insper\6 semestre\Problemas em Economia\Econometria\Estimacao\V
+> iscondao.xlsx", sheet("PEE1TWN") firstrow clear
+(19 vars, 782 obs)
+
+. 
+. tsset country_id year
+
+Panel variable: country_id (strongly balanced)
+ Time variable: year, 1997 to 2019
+         Delta: 1 unit
+
+. egen tratamento_2001 = total(year == 2001) if China_entrada_OMC == 1
+(136 missing values generated)
+
+. 
+. 
+. * Defina as variáveis de interesse e controle (substitua com suas variáveis)
+. global Y "wage"
+
+. global X "cresc_GDP n Price_to_c_index exports imports dot_K dot_L unemployment wage(2000) wage(1999) wage(1998)
+>  wage(1997)"
+
+. 
+. * Execute o teste de placebo com synth_runner
+. synth_runner $Y $X, trunit(1) trperiod(2001) gen_vars
+Estimating the treatment effects
+Estimating the possible placebo effects (one set for each of the 1 treatment periods)
+|                               | Total: 33
+................................| 12.00s elapsed. 
+
+Conducting inference: 5 steps, and 33 placebo averages
+Step 1... Finished
+Step 2... Finished
+Step 3... Finished
+Step 4... Finished
+Step 5... Finished
+
+Post-treatment results: Effects, p-values, standardized p-values
+
+             | estimates      pvals  pvals_std 
+-------------+--------------------------------
+          c1 |   -1594.3   .1515152   .7575758 
+          c2 | -850.4788   .6363636   .8787879 
+          c3 | -2042.954   .3939394   .8787879 
+          c4 | -3835.349   .1515152   .8484848 
+          c5 | -6300.719   .0606061   .7272727 
+          c6 | -8109.544   .0606061   .6363636 
+          c7 | -12622.75          0   .5454545 
+          c8 | -13444.22          0   .5454545 
+          c9 | -11492.84          0   .6060606 
+         c10 | -10340.51          0   .5454545 
+         c11 | -9622.073          0   .5757576 
+         c12 | -10098.75          0   .6666667 
+         c13 | -11350.28          0   .6666667 
+         c14 | -12545.56          0   .6363636 
+         c15 | -14466.91          0   .6666667 
+         c16 | -15814.24          0   .6666667 
+         c17 | -16779.41          0   .6666667 
+         c18 | -17577.98    .030303   .6666667 
+         c19 | -18726.86          0   .6666667 
+
+. 
+. single_treatment_graphs, do_color(gray%15)
+
+. effect_graphs
+
+. pval_graphs
+
+. 
+end of do-file
+
+. log close
+      name:  <unnamed>
+       log:  C:\Users\jcase\OneDrive\Joao\Insper\6 semestre\Problemas em Economia\Econometria\Entrega empírica\log
+> synth_TWN_tds_sd.log
+  log type:  text
+ closed on:   8 Nov 2023, 17:49:43
+------------------------------------------------------------------------------------------------------------------
